@@ -25,6 +25,9 @@ class VM
 		$opCodes = new \SplFixedArray(self::TOTAL_OPERATIONS);
 
 		$opCodes[0] = 'halt';
+		$opCodes[6] = 'jmp';
+		$opCodes[7] = 'jt';
+		$opCodes[8] = 'jf';
 		$opCodes[19] = 'out';
 		$opCodes[21] = 'noop';
 
@@ -107,6 +110,50 @@ class VM
 	protected function _halt()
 	{
 		exit();
+	}
+
+	/**
+	 * jmp: 6 a
+	 *   jump to <a>
+	 */
+	protected function _jmp()
+	{
+		$nextAddress = $this->_getNextInstruction();
+		$this->_setProgramCounter($nextAddress);
+	}
+
+	protected function _setProgramCounter($address)
+	{
+		$this->_programCounter = $address;
+	}
+
+
+	/**
+	 * jt: 7 a b
+	 *   if <a> is nonzero, jump to <b>
+	 */
+	protected function _jt()
+	{
+		$test = (int)$this->_getNextInstruction();
+		$nextAddress = $this->_getNextInstruction();
+
+		if ($test !== 0) {
+			$this->_setProgramCounter($nextAddress);
+		}
+	}
+
+	/**
+	 * jf: 8 a b
+	 *   if <a> is zero, jump to <b>
+	 */
+	protected function _jf()
+	{
+		$test = (int)$this->_getNextInstruction();
+		$nextAddress = $this->_getNextInstruction();
+
+		if ($test === 0) {
+			$this->_setProgramCounter($nextAddress);
+		}
 	}
 
 	/**
