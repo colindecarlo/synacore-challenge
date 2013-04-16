@@ -90,7 +90,14 @@ class VM
 		$instruction = $this->_memory[$this->_programCounter];
 		$this->_programCounter++;
 
-		return $instruction;
+		if ($instruction < 32768) {
+			return $instruction;
+		} else if ($instruction >= 32768 && $instruction < 32776) {
+			$register = $instruction - 32768;
+			return $this->_registers[$register];
+		}
+
+		throw new \Exception("Invalid Instruction %s", $instruction);
 	}
 
 	/**
