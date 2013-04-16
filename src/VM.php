@@ -4,17 +4,31 @@ namespace SynacoreChallenge;
 
 class VM
 {
+	const TOTAL_OPERATIONS = 22;
 
 	protected $_memory;
 	protected $_registers;
 	protected $_stack;
+	protected $_opCodes;
 	protected $_programCounter = null;
 
 	public function __construct($memorySize = 32768, $numberOfRegisters = 8)
 	{
 		$this->_memory = new \SplFixedArray($memorySize);
 		$this->_registers = new \SplFixedArray($numberOfRegisters);
+		$this->_opCodes = $this->_initOpCodes();
 		$this->_stack = new \SplStack();
+	}
+
+	protected function _initOpCodes()
+	{
+		$opCodes = new \SplFixedArray(self::TOTAL_OPERATIONS);
+
+		$opCodes[0] = 'halt';
+		$opCodes[19] = 'out';
+		$opCodes[21] = 'noop';
+
+		return $opCodes;
 	}
 
 	public function load($path)
