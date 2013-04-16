@@ -57,10 +57,29 @@ class VM
 
 	public function run()
 	{
+		while (true) {
+			$opCode = $this->_getNextOpCode();
+			$operation = $this->_opCodes[$opCode];
+
+			if (null === $operation) {
+				throw new \Exception(sprintf("Undefined opCode (%s)! Write moar code!", $opCode));
+			}
+
+			$method = '_' . $operation;
+			$this->{$method}();
+		}
 	}
 
-	protected function _noop()
+	protected function _getNextOpCode()
 	{
+		return $this->_getNextInstruction();
+	}
+
+	protected function _getNextInstruction()
+	{
+		$instruction = $this->_memory[$this->_programCounter];
 		$this->_programCounter++;
+
+		return $instruction;
 	}
 }
