@@ -15,7 +15,7 @@ class VM
 	public function __construct($memorySize = 32768, $numberOfRegisters = 8)
 	{
 		$this->_memory = new \SplFixedArray($memorySize);
-		$this->_registers = new \SplFixedArray($numberOfRegisters);
+		$this->_registers = $this->_initRegisters($numberOfRegisters);
 		$this->_opCodes = $this->_initOpCodes();
 		$this->_stack = new \SplStack();
 	}
@@ -29,6 +29,16 @@ class VM
 		$opCodes[21] = 'noop';
 
 		return $opCodes;
+	}
+
+	protected function _initRegisters($numberOfRegisters)
+	{
+		$registers = new \SplFixedArray($numberOfRegisters);
+		for ($i=0; $i < $registers->getSize(); $i++) {
+			$registers[$i] = 0;
+		}
+
+		return $registers;
 	}
 
 	public function load($path)
