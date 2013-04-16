@@ -82,4 +82,32 @@ class VM
 
 		return $instruction;
 	}
+
+	/**
+	 * halt: 0
+	 *   stop execution and terminate the program
+	 */
+	protected function _halt()
+	{
+		exit();
+	}
+
+	/**
+	 * out: 19 a
+	 *   write the character represented by ascii code <a> to the terminal
+	 */
+	protected function _out()
+	{
+		$data = $this->_getNextInstruction();
+		echo chr($data);
+	}
+
+	/**
+	 * noop: 21
+	 *   no operation
+	 */
+	protected function _noop()
+	{
+		return;
+	}
 }
