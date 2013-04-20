@@ -5,6 +5,7 @@ namespace SynacoreChallenge;
 class VM
 {
 	const TOTAL_OPERATIONS = 22;
+	const MAX_INT = 32768;
 
 	protected $_memory;
 	protected $_registers;
@@ -25,9 +26,18 @@ class VM
 		$opCodes = new \SplFixedArray(self::TOTAL_OPERATIONS);
 
 		$opCodes[0] = 'halt';
+		$opCodes[1] = 'set';
+		$opCodes[2] = 'push';
+		$opCodes[3] = 'pop';
+		$opCodes[4] = 'eq';
+		$opCodes[5] = 'gt';
 		$opCodes[6] = 'jmp';
 		$opCodes[7] = 'jt';
 		$opCodes[8] = 'jf';
+		$opCodes[9] = 'add';
+		$opCodes[12] = 'and';
+		$opCodes[13] = 'or';
+		$opCodes[14] = 'not';
 		$opCodes[19] = 'out';
 		$opCodes[21] = 'noop';
 
@@ -90,17 +100,30 @@ class VM
 
 	protected function _getNextInstruction()
 	{
-		$instruction = $this->_memory[$this->_programCounter];
-		$this->_programCounter++;
+		$instruction = $this->_getRawInstruction();
 
-		if ($instruction < 32768) {
+		if ($instruction < self::MAX_INT) {
 			return $instruction;
 		} else if ($instruction >= 32768 && $instruction < 32776) {
-			$register = $instruction - 32768;
+			$register = $this->_getRegisterId($instruction);
 			return $this->_registers[$register];
 		}
 
 		throw new \Exception("Invalid Instruction %s", $instruction);
+	}
+
+	protected function _getRawInstruction()
+	{
+		$instruction = $this->_memory[$this->_programCounter];
+		//printf("[PC %s] instruction %s, ", $this->_programCounter, $instruction);
+		$this->_programCounter++;
+
+		return $instruction;
+	}
+
+	protected function _getRegisterId($instruction)
+	{
+		return $instruction - self::MAX_INT;
 	}
 
 	/**
@@ -110,6 +133,88 @@ class VM
 	protected function _halt()
 	{
 		exit();
+	}
+
+	/**
+	 * set: 1 a b
+	 *   set register <a> to the value of <b>
+	 */
+	protected function _set()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value = $this->_getNextInstruction();
+
+		$this->_setRegister($targetRegister, $value);
+	}
+
+	protected function _setRegister($target, $value)
+	{
+		$this->_registers[$target] = $value;
+	}
+
+	protected function _getTargetRegister()
+	{
+		$instruction = $this->_getRawInstruction();
+
+		if ($instruction < 32768 || $instruction > 32775) {
+			throw new \Exception("Invalid register address %s", $instruction);
+		}
+
+		return $this->_getRegisterId($instruction);
+	}
+
+	/**
+	 * push: 2 a
+	 *   push <a> onto the stack
+	 */
+	protected function _push()
+	{
+		$value = $this->_getNextInstruction();
+		$this->_stack->push($value);
+	}
+
+	/**
+	 * pop: 3 a
+	 *   remove the top element from the stack and write it into <a>; empty stack = error
+	 */
+	protected function _pop()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		try {
+			$value = $this->_stack->pop();
+			$this->_setRegister($targetRegister, $value);
+		} catch (\RuntimeException $e) {
+			printf("ERROR - The stack is empty.\n");
+			$this->_halt();
+		}
+	}
+
+	/**
+	 * eq: 4 a b c
+	 *   set <a> to 1 if <b> is equal to <c>; set it to 0 otherwise
+	 */
+	protected function _eq()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$leftSide = $this->_getNextInstruction();
+		$rightSide = $this->_getNextInstruction();
+
+		$result = $leftSide == $rightSide ? 1 : 0;
+		$this->_setRegister($targetRegister, $result);
+	}
+
+	/**
+	 * gt: 5 a b c
+	 *   set <a> to 1 if <b> is greater than <c>; set it to 0 otherwise
+	 */
+	protected function _gt()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$leftSide = $this->_getNextInstruction();
+		$rightSide = $this->_getNextInstruction();
+
+		$result = $leftSide > $rightSide ? 1 : 0;
+		$this->_setRegister($targetRegister, $result);
 	}
 
 	/**
@@ -154,6 +259,62 @@ class VM
 		if ($test === 0) {
 			$this->_setProgramCounter($nextAddress);
 		}
+	}
+
+	/**
+	 * add: 9 a b c
+	 *   assign into <a> the sum of <b> and <c> (modulo 32768)
+	 */
+	protected function _add()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value1 = $this->_getNextInstruction();
+		$value2 = $this->_getNextInstruction();
+
+		$sum = ($value1 + $value2) % self::MAX_INT;
+		$this->_setRegister($targetRegister, $sum);
+	}
+
+	/**
+	 * and: 12 a b c
+	 *   stores into <a> the bitwise and of <b> and <c>
+	 */
+	protected function _and()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value1 = $this->_getNextInstruction();
+		$value2 = $this->_getNextInstruction();
+
+		$result = $value1 & $value2;
+		$this->_setRegister($targetRegister, $result);
+	}
+
+	/**
+	 * or: 13 a b c
+	 *   stores into <a> the bitwise or of <b> and <c>
+	 */
+	protected function _or()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value1 = $this->_getNextInstruction();
+		$value2 = $this->_getNextInstruction();
+
+		$result = $value1 | $value2;
+		$this->_setRegister($targetRegister, $result);
+	}
+
+	/**
+	 * not: 14 a b
+	 *   stores 15-bit bitwise inverse of <b> in <a>
+	 */
+	protected function _not()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value = $this->_getNextInstruction();
+		$mask = self::MAX_INT - 1;
+		$neg = (~ $value) & $mask;
+
+		$this->_setRegister($targetRegister, $neg);
 	}
 
 	/**
