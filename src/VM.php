@@ -38,6 +38,7 @@ class VM
 		$opCodes[12] = 'and';
 		$opCodes[13] = 'or';
 		$opCodes[14] = 'not';
+		$opCodes[17] = 'call';
 		$opCodes[19] = 'out';
 		$opCodes[21] = 'noop';
 
@@ -115,7 +116,7 @@ class VM
 	protected function _getRawInstruction()
 	{
 		$instruction = $this->_memory[$this->_programCounter];
-		//printf("[PC %s] instruction %s, ", $this->_programCounter, $instruction);
+		//printf("[PC %s] instruction %s\n", $this->_programCounter, $instruction);
 		$this->_programCounter++;
 
 		return $instruction;
@@ -315,6 +316,17 @@ class VM
 		$neg = (~ $value) & $mask;
 
 		$this->_setRegister($targetRegister, $neg);
+	}
+
+	/**
+	 * call: 17 a
+	 *   write the address of the next instruction to the stack and jump to <a>
+	 */
+	protected function _call()
+	{
+		$nextInstructionAddress = $this->_programCounter + 1;
+		$this->_stack->push($nextInstructionAddress);
+		$this->_jmp();
 	}
 
 	/**
