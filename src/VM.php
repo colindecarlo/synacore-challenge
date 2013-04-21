@@ -49,6 +49,7 @@ class VM
 		$opCodes[17] = 'call';
 		$opCodes[18] = 'ret';
 		$opCodes[19] = 'out';
+		$opCodes[20] = 'in';
 		$opCodes[21] = 'noop';
 
 		return $opCodes;
@@ -415,6 +416,19 @@ class VM
 	{
 		$data = $this->_getNextInstruction();
 		echo chr($data);
+	}
+
+	/**
+	 */
+	protected function _in()
+	{
+		$stdin = fopen('php://stdin', 'r');
+		$line = fgets($stdin);
+		fclose($stdin);
+		$code = ord($line);
+
+		$address = $this->_getNextInstruction();
+		$this->_memory[$address] = $code;
 	}
 
 	/**
