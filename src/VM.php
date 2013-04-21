@@ -39,10 +39,15 @@ class VM
 		$opCodes[7] = 'jt';
 		$opCodes[8] = 'jf';
 		$opCodes[9] = 'add';
+		$opCodes[10] = 'mult';
+		$opCodes[11] = 'mod';
 		$opCodes[12] = 'and';
 		$opCodes[13] = 'or';
 		$opCodes[14] = 'not';
+		$opCodes[15] = 'rmem';
+		$opCodes[16] = 'wmem';
 		$opCodes[17] = 'call';
+		$opCodes[18] = 'ret';
 		$opCodes[19] = 'out';
 		$opCodes[21] = 'noop';
 
@@ -282,6 +287,34 @@ class VM
 	}
 
 	/**
+	 * mult: 10 a b c
+	 *   store into <a> the product of <b> and <c> (modulo 32768)
+	 */
+	protected function _mult()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value1 = $this->_getNextInstruction();
+		$value2 = $this->_getNextInstruction();
+
+		$product = ($value1 * $value2) % $this->_modulo;
+		$this->_setRegister($targetRegister, $product);
+	}
+		
+	/**
+	 * mod: 11 a b c
+	 *   store into <a> the remainder of <b> divided by <c>
+	 */
+	protected function _mod()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$value1 = $this->_getNextInstruction();
+		$value2 = $this->_getNextInstruction();
+
+		$remainder = $value1 % $value2;
+		$this->_setRegister($targetRegister, $remainder);
+	}
+
+	/**
 	 * and: 12 a b c
 	 *   stores into <a> the bitwise and of <b> and <c>
 	 */
@@ -324,6 +357,31 @@ class VM
 	}
 
 	/**
+	 * rmem: 15 a b
+	 *   read memory at address <b> and write it to <a>
+	 */
+	protected function _rmem()
+	{
+		$targetRegister = $this->_getTargetRegister();
+		$address = $this->_getNextInstruction();
+		$mem = $this->_memory[$address];
+
+		$this->_setRegister($targetRegister, $mem);
+	}
+
+	/**
+	 * wmem: 16 a b
+	 *   write the value from <b> into memory at address <a>
+	 */
+	protected function _wmem()
+	{
+		$address = $this->_getNextInstruction();
+		$value = $this->_getNextInstruction();
+
+		$this->_memory[$address] = $value;
+	}
+
+	/**
 	 * call: 17 a
 	 *   write the address of the next instruction to the stack and jump to <a>
 	 */
@@ -332,6 +390,21 @@ class VM
 		$nextInstructionAddress = $this->_programCounter + 1;
 		$this->_stack->push($nextInstructionAddress);
 		$this->_jmp();
+	}
+
+	/**
+	 * ret: 18
+	 *   remove the top element from the stack and jump to it; empty stack = halt
+	 */
+	protected function _ret()
+	{
+		try {
+			$address = $this->_stack->pop();
+			$this->_setProgramCounter($address);
+		} catch (\RuntimeException $e) {
+			printf("The stack is empty.\n");
+			$this->_halt();
+		}
 	}
 
 	/**
