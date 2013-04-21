@@ -429,6 +429,8 @@ class VM
 
 		$address = $this->_getNextInstruction();
 		$this->_memory[$address] = $code;
+
+		$this->_peak(4);
 	}
 
 	/**
@@ -439,4 +441,15 @@ class VM
 	{
 		return;
 	}
+
+	protected function _peak($numberOfAddresses)
+	{
+		$peak = array();
+		for ($i = 0; $i < $numberOfAddresses; $i++) {
+			$address = $this->_programCounter + $i;
+			$peak[] = $this->_memory[$address];
+		}
+		printf("Peaked: %s\n", implode(' ', $peak));
+	}
+
 }
