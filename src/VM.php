@@ -129,12 +129,17 @@ class VM
 
 		if ($instruction <= self::MAX_INT) {
 			return $instruction;
-		} else if ($instruction > self::MAX_INT && $instruction <= self::MAX_INT + $this->_numberOfRegisters) {
+		} else if ($this->_isRegister($instruction)) {
 			$register = $this->_getRegisterId($instruction);
 			return $this->_registers[$register];
 		}
 
 		throw new \Exception("Invalid Instruction %s", $instruction);
+	}
+
+	protected function _isRegister($instruction)
+	{
+		return $instruction > self::MAX_INT && $instruction <= self::MAX_INT + $this->_numberOfRegisters;
 	}
 
 	protected function _getRawInstruction()
@@ -433,18 +438,33 @@ class VM
 	}
 
 	/**
+	 * in: 20 a
+	 * read a character from the terminal and write its ascii code to <a>;
+	 *
+	 * it can be assumed that once input starts, it will continue until a newline is encountered;
+	 * this means that you can safely read whole lines from the keyboard
+	 * and trust that they will be fully read
 	 */
 	protected function _in()
 	{
-		$stdin = fopen('php://stdin', 'r');
-		$line = fgets($stdin);
-		fclose($stdin);
-		$code = ord($line);
+		// get the current tty state
+		$state = `stty -g`;
 
-		$address = $this->_getNextInstruction();
-		$this->_memory[$address] = $code;
+		system("stty -icanon");
 
-		$this->_peak(4);
+		$char = fread(STDIN, 1);
+		$code = ord($char);
+
+		$instruction = $this->_getRawInstruction();
+		if ($this->_isRegister($instruction)) {
+			$register = $this->_getRegisterId($instruction);
+			$this->_registers[$register] = $code;
+		} else {
+			$this->_memory[$instruction] = $code;
+		}
+
+		// reset the terminal
+		system("stty '" . trim($state) . "'");
 	}
 
 	/**
