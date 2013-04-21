@@ -15,6 +15,8 @@ class VM
 	protected $_programCounter = null;
 	protected $_modulo;
 
+	protected $_logger = null;
+
 	public function __construct($memorySize = 32768, $numberOfRegisters = 8)
 	{
 		$this->_memory = new \SplFixedArray($memorySize);
@@ -23,6 +25,18 @@ class VM
 		$this->_opCodes = $this->_initOpCodes();
 		$this->_stack = new \SplStack();
 		$this->_modulo = self::MAX_INT + 1;
+	}
+
+	public function setLogger(\Log $logger)
+	{
+		$this->_logger = $logger;
+	}
+
+	protected function _log($message, $level = PEAR_LOG_DEBUG)
+	{
+		if ($this->_logger) {
+			$this->_logger->log($message, $level);
+		}
 	}
 
 	protected function _initOpCodes()
@@ -126,7 +140,7 @@ class VM
 	protected function _getRawInstruction()
 	{
 		$instruction = $this->_memory[$this->_programCounter];
-		//printf("[PC %s] instruction %s\n", $this->_programCounter, $instruction);
+		$this->_log(sprintf("[PC %s] instruction %s", $this->_programCounter, $instruction));
 		$this->_programCounter++;
 
 		return $instruction;
