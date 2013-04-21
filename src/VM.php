@@ -5,20 +5,24 @@ namespace SynacoreChallenge;
 class VM
 {
 	const TOTAL_OPERATIONS = 22;
-	const MAX_INT = 32768;
+	const MAX_INT = 32767;
 
 	protected $_memory;
 	protected $_registers;
+	protected $_numberOfRegisters;
 	protected $_stack;
 	protected $_opCodes;
 	protected $_programCounter = null;
+	protected $_modulo;
 
 	public function __construct($memorySize = 32768, $numberOfRegisters = 8)
 	{
 		$this->_memory = new \SplFixedArray($memorySize);
-		$this->_registers = $this->_initRegisters($numberOfRegisters);
+		$this->_numberOfRegisters = 8;
+		$this->_registers = $this->_initRegisters();
 		$this->_opCodes = $this->_initOpCodes();
 		$this->_stack = new \SplStack();
+		$this->_modulo = self::MAX_INT + 1;
 	}
 
 	protected function _initOpCodes()
@@ -45,9 +49,9 @@ class VM
 		return $opCodes;
 	}
 
-	protected function _initRegisters($numberOfRegisters)
+	protected function _initRegisters()
 	{
-		$registers = new \SplFixedArray($numberOfRegisters);
+		$registers = new \SplFixedArray($this->_numberOfRegisters);
 		for ($i=0; $i < $registers->getSize(); $i++) {
 			$registers[$i] = 0;
 		}
@@ -103,9 +107,9 @@ class VM
 	{
 		$instruction = $this->_getRawInstruction();
 
-		if ($instruction < self::MAX_INT) {
+		if ($instruction <= self::MAX_INT) {
 			return $instruction;
-		} else if ($instruction >= 32768 && $instruction < 32776) {
+		} else if ($instruction > self::MAX_INT && $instruction <= self::MAX_INT + $this->_numberOfRegisters) {
 			$register = $this->_getRegisterId($instruction);
 			return $this->_registers[$register];
 		}
@@ -124,7 +128,8 @@ class VM
 
 	protected function _getRegisterId($instruction)
 	{
-		return $instruction - self::MAX_INT;
+		$registerZeroAddress = self::MAX_INT + 1;
+		return $instruction - $registerZeroAddress;
 	}
 
 	/**
@@ -157,7 +162,7 @@ class VM
 	{
 		$instruction = $this->_getRawInstruction();
 
-		if ($instruction < 32768 || $instruction > 32775) {
+		if ($instruction <= 32767 || $instruction > 32775) {
 			throw new \Exception("Invalid register address %s", $instruction);
 		}
 
@@ -272,7 +277,7 @@ class VM
 		$value1 = $this->_getNextInstruction();
 		$value2 = $this->_getNextInstruction();
 
-		$sum = ($value1 + $value2) % self::MAX_INT;
+		$sum = ($value1 + $value2) % $this->_modulo;
 		$this->_setRegister($targetRegister, $sum);
 	}
 
@@ -312,7 +317,7 @@ class VM
 	{
 		$targetRegister = $this->_getTargetRegister();
 		$value = $this->_getNextInstruction();
-		$mask = self::MAX_INT - 1;
+		$mask = self::MAX_INT;
 		$neg = (~ $value) & $mask;
 
 		$this->_setRegister($targetRegister, $neg);
