@@ -3,7 +3,8 @@
 require __DIR__ . '/src/VM.php';
 require 'Log.php';
 
-$logger = Log::factory('file', 'vm.log', 'Challenge VM');
+$level = PEAR_LOG_INFO;
+$logger = Log::factory('file', 'vm.log', 'Challenge VM', null, $level);
 
 $machine = new \SynacoreChallenge\VM();
 $machine->setLogger($logger);

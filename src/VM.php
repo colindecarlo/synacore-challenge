@@ -32,7 +32,7 @@ class VM
 		$this->_logger = $logger;
 	}
 
-	protected function _log($message, $level = PEAR_LOG_DEBUG)
+	protected function _log($message, $level = PEAR_LOG_INFO)
 	{
 		if ($this->_logger) {
 			$this->_logger->log($message, $level);
@@ -140,7 +140,7 @@ class VM
 	protected function _getRawInstruction()
 	{
 		$instruction = $this->_memory[$this->_programCounter];
-		$this->_log(sprintf("[PC %s] instruction %s", $this->_programCounter, $instruction));
+		$this->_log(sprintf("[PC %s] instruction %s", $this->_programCounter, $instruction), PEAR_LOG_DEBUG);
 		$this->_programCounter++;
 
 		return $instruction;
@@ -463,7 +463,7 @@ class VM
 			$address = $this->_programCounter + $i;
 			$peak[] = $this->_memory[$address];
 		}
-		printf("Peaked: %s\n", implode(' ', $peak));
+		$this->_log(sprintf("Peaked: %s", implode(' ', $peak)));
 	}
 
 }
